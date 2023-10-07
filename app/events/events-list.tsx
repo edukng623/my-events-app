@@ -1,44 +1,54 @@
+"use server"
+import Link from "next/link";
 
-
-import Image from 'next/image' 
-import parse  from 'html-react-parser'
-interface QueryState { 
-  sortBy: string
-  sortDescending: boolean
-  page: number
-  limit: number
-}
-async function getData(query: QueryState) {
-  let res = await fetch('http://localhost:3000/api/events?sortBy=name&sortOrder=-1&page=1&limit=2')
-  // The return value is *not* serialized
-  // You can return Date, Map, Set, etc.
  
-  if (!res.ok) {
-    // This will activate the closest `error.js` Error Boundary
-    return Promise.resolve( (<main><b>wg</b></main>));
-  } 
-  return res.text().then( t => {console.log("Parsing text: " + t); return t;}).then( parse );
-}
-// This gets called every time the page is called
-export async function getServerSideProps({ params }) {
-
-    let res = await fetch('http://localhost:3000/api/events?sortBy=name&sortOrder=-1&page=1&limit=2')
-  // The return value is *not* serialized
-  // You can return Date, Map, Set, etc.
  
-  let resText = await res.text().then( t => {console.log("Parsing text: " + t); return t;}).then( parse );
-
-    // Pass data to the page via props
-    return resText;
-}
-const EventsList = ({resText, timestamp}) => { 
-  let query = {"sortBy": "name","sortDescending": false, page: 1, limit: 10};
-  let data = getData(query);
+async function getEvents(sortBy: string, sortOrder: number, page: number, limit: number) {
+  const res = await fetch(`http://localhost:3000/api/events?sortBy=${sortBy}&sortOrder=${sortOrder}&page=${page}&limit=${limit}`, { next: { revalidate: 2 } })
+//   let jRes = await res.json();
+//   console.log(jRes);
+  return await res.json();
+} 
+ 
+export default async function EventsList({sortBy = "name", sortOder = -1, page  = 1, limit =  10}) {  
+    console.log(sortBy)
+    
+  // Initiate both requests in parallel
+  const eventsData = getEvents(sortBy, sortOder, page, limit) 
+ 
+  // Wait for the promises to resolve
+  const [eventsResponse] = await Promise.all([eventsData ])
+ 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div dangerouslySetInnerHTML={resText}></div>
-    </main>
-  );
-}  
-
-export default EventsList;
+        <main className="flex min-h-screen flex-col items-center justify-between p-24">
+          <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
+          <h1>Events {eventsResponse.events.length} / {eventsResponse.total}</h1> 
+          
+          <Link
+            href={{
+                pathname: "events",
+                query: {
+                    page: 1,
+                    sortOrder: sortOder,
+                    limit: limit,
+                    sortBy: sortBy
+                }
+            }} 
+        >
+        Next Page
+        </Link>
+          
+          </div>
+          {eventsResponse.events.map((event,index)=>{
+                return <div key={index} >
+                        <h4>{event.name}</h4>  
+                        <b>{event.status}</b>
+                        <h5 > {event.description}</h5>
+                        <h6 > {event.dueDate}</h6>
+                    </div>
+                // <li key={index}><b>{event.name}</b> - {event.status} : {event.dueDate} </li>
+            })}
+        </main> 
+    
+  )
+} 
