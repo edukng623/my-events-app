@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createEvent } from '../utils/api/events';
-
+import Link from 'next/link';
 const CreateEvent = () => {
   const [eventName, setEventName] = useState('');
 
@@ -15,6 +15,9 @@ const CreateEvent = () => {
 
   return (
     <div>
+        <Link href="/events?limit=2">
+      Shows Events
+      </Link>
       <h2>Create Event</h2>
       <input
         type="text"

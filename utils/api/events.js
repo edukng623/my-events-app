@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// TODO: Should be based on .env
 const API_BASE_URL = 'http://localhost:3000/api';  
 
 export const fetchEvents = async (sortBy, sortOrder, page, limit, status) => {
